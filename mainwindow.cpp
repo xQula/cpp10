@@ -37,6 +37,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(client, &TCPclient::sig_sendStat, this, &MainWindow::DisplayStat);
     connect(client, &TCPclient::sig_SendReplyForSetData, this, &MainWindow::SetDataReply);
     connect(client, &TCPclient::sig_Success, this, &MainWindow::DisplaySuccess);
+    connect(client, &TCPclient::sig_Error, this, &MainWindow::DisplayError);
 
 
  /*
@@ -73,7 +74,7 @@ void MainWindow::DisplayStat(StatServer stat)
                           "Принято пакетов " + QString::number(stat.revPck) + "\n"
                           "Передано пакетов " + QString::number(stat.sendPck) + "\n"
                           "Время работы сервера секунд " + QString::number(stat.workTime) + "\n"
-                          "Количество подключенных клиентов " + QString::number(stat.clients) + "\n");
+                          "Количество подключенных клиентов " + QString::number(stat.clients));
 }
 void MainWindow::DisplayError(uint16_t error)
 {
@@ -187,12 +188,13 @@ void MainWindow::on_pb_request_clicked()
        }
            //Отправить данные
        case 3:{
-           auto header_size = header;
-           header_size.idData = GET_SIZE;
+           if(ui->le_data->text().size() == 0){
+               ui->tb_result->append("Вы не ввели данные");
+               return;
+           }
            header.idData = SET_DATA;
-           client->FlagOverrSize();
+           header.len = ui->le_data->text().toUtf8().size() + sizeof(int);
            flag_set_data = true;
-           client->SendRequest(header_size);
            break;
         }
            //Очистить память на сервере

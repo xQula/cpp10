@@ -33,6 +33,8 @@ private slots:
 
     void on_cb_request_currentIndexChanged(int index);
 
+signals:
+
 private:
     Ui::MainWindow *ui;
     TCPclient* client;

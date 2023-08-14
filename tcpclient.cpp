@@ -39,8 +39,6 @@ TCPclient::TCPclient(QObject *parent) : QObject(parent)
     connect(socket, &QTcpSocket::connected, this, [this]{emit sig_connectStatus(STATUS_SUCCES);});
     connect(socket, &QTcpSocket::errorOccurred, this, [this]{emit sig_connectStatus(ERR_CONNECT_TO_HOST);});
     connect(socket, &QTcpSocket::disconnected, this, &TCPclient::sig_Disconnected);
-    size_server = 0;
-    flag_overr_size = false;
 }
 
 /* write
@@ -60,15 +58,10 @@ void TCPclient::SendRequest(ServiceHeader head)
 */
 void TCPclient::SendData(ServiceHeader head, QString str)
 {
-    if(sizeof(str) >= sizeof(size_server)){
-
-    }
-    FlagOverrSize();
     QByteArray sendHdr;
     QDataStream outStr(&sendHdr, QIODevice::WriteOnly);
     outStr << head;
     outStr << str;
-
     socket->write(sendHdr);
 }
 
@@ -86,16 +79,6 @@ void TCPclient::DisconnectFromHost()
 {
     socket->disconnectFromHost();
 }
-
-void TCPclient::FlagOverrSize()
-{
-    if(flag_overr_size){
-        flag_overr_size = false;
-    }else{
-        flag_overr_size = true;
-    }
-}
-
 
 void TCPclient::ReadyReed()
 {
@@ -164,6 +147,16 @@ void TCPclient::ReadyReed()
 
 void TCPclient::ProcessingData(ServiceHeader header, QDataStream &stream)
 {
+    switch(header.status){
+        case ERR_NO_FREE_SPACE:{
+        emit sig_Error(ERR_NO_FREE_SPACE);
+        return;
+        }
+        case ERR_NO_FUNCT:{
+        emit sig_Error(ERR_NO_FUNCT);
+        return;
+        }
+    }
 
     switch (header.idData){
 
@@ -171,17 +164,13 @@ void TCPclient::ProcessingData(ServiceHeader header, QDataStream &stream)
         QDateTime time;
         stream >> time;
         emit sig_sendTime(time);
-        break;
+        return;
     }
     case GET_SIZE:{
         uint32_t size;
         stream >> size;
-        if(!flag_overr_size){
-            emit sig_sendFreeSize(size);
-        }else{
-            size_server = size;
-        }
-        break;
+        emit sig_sendFreeSize(size);
+        return;
     }
     case GET_STAT:{
         StatServer st_server;
@@ -192,18 +181,17 @@ void TCPclient::ProcessingData(ServiceHeader header, QDataStream &stream)
         stream >> st_server.workTime;
         stream >> st_server.clients;
         emit sig_sendStat(st_server);
-        break;
+        return;
     }
     case SET_DATA:{
         QString str_data;
         stream >> str_data;
         emit sig_SendReplyForSetData(str_data);
-        break;
+        return;
     }
     case CLEAR_DATA:{
-        uint16_t typeMess;
-        stream >> typeMess;
-        emit sig_Success(typeMess);
+        emit sig_Success(CLEAR_DATA);
+        return;
     }
     default: return;
 

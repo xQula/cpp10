@@ -18,7 +18,6 @@ public:
     void SendData(ServiceHeader head, QString data);
     void ConnectToHost(QHostAddress host, uint16_t port);
     void DisconnectFromHost(void);
-    void FlagOverrSize();
 
 
 
@@ -32,8 +31,6 @@ private:
 QTcpSocket* socket;
 QTcpSocket* socket_var;
 ServiceHeader servHeader;
-uint32_t size_server;
-bool flag_overr_size;
 
 signals:
     void sig_sendFreeSize(uint32_t);
